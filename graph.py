@@ -6,7 +6,8 @@ import requests
 import random
 
 from itertools import combinations, islice, chain
-from clint.textui import progress
+from collections import OrderedDict
+from stop_words import get_stop_words
 
 
 
@@ -51,9 +52,15 @@ class Text:
         # Match sequences of letters.
         tokens = re.finditer('[a-z]{2,}', self.text.lower())
 
+        # Get English stopwords.
+        stopwords = get_stop_words('en')
+
         for match in tokens:
+
             token = match.group(0)
-            self.tokens.append(token)
+
+            if token not in stopwords:
+                self.tokens.append(token)
 
 
 
@@ -74,7 +81,7 @@ class Graph:
         self.graph = nx.Graph()
 
 
-    def build(self, num_samples=500, sample_size=10):
+    def build(self, n=10, keep=0.01):
 
         """
         Index term co-occurrence edges.
@@ -83,15 +90,12 @@ class Graph:
             n (int): Window width.
         """
 
-        for i in range(num_samples):
+        for w in window(self.text.tokens, n):
 
-            # Get a random starting offset.
-            start = random.randint(0, len(self.text.tokens)-sample_size)
+            if random.random() > keep:
+                continue
 
-            # Take N tokens after the offset.
-            sample = self.text.tokens[start:start+sample_size]
-
-            for t1, t2 in combinations(sample, 2):
+            for t1, t2 in combinations(w, 2):
 
                 # If the edge exists, increment the weight.
 
@@ -114,3 +118,20 @@ class Graph:
         """
 
         nx.write_gml(self.graph, path)
+
+
+def window(seq, n=2):
+
+    """
+    Yield a sliding window over an iterable.
+
+    Args:
+        seq (iter): The sequence.
+        n (int): The window width.
+
+    Yields:
+        tuple: The next window.
+    """
+
+    for i in range(len(seq)-n):
+        yield seq[i:i+n]
