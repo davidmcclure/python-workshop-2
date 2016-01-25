@@ -120,6 +120,7 @@ class Graph:
         nx.write_gml(self.graph, path)
 
 
+
 def window(seq, n=2):
 
     """
